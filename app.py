@@ -85,7 +85,7 @@ with st.expander("ℹ️ How are appointments assigned?", expanded=True):
     expected contribution to prep points.
 
     - Select **all** time slots when you're available (UTC).
-    - Each selected **:15** slot also includes the corresponding **:45** slot.
+    - Each selected hour slot includes the corresponding **:15** and **:45** slots.
     - Estimated resources and speedups help prioritize appointments
       that contribute the most prep points. 
     - We'll try to accommodate as many players as possible while
