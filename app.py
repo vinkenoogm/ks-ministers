@@ -27,6 +27,11 @@ FINAL_SLOT = "23:45 (event day; final 15-min slot)"
 TIMES = [FIRST_SLOT] + [f"{h:02d}:15" for h in range(24)] + [FINAL_SLOT]
 
 
+def availability_label(slot: str) -> str:
+    """Display regular start-time pairs by their hour; retain boundary labels."""
+    return slot[:2] + ":00" if slot.endswith(":15") else slot
+
+
 def expand_times(selections: list[str]) -> list[str]:
     """Expand :15 selection into actual appointments, retaining day-boundary labels."""
     expanded = []
@@ -108,7 +113,7 @@ if st.session_state.get("review_payload"):
         st.write("In-game ID:", payload["in_game_id"])
     for day, details in payload["days"].items():
         st.subheader(f"{details['date']} | {details['minister']}")
-        st.write("Selected availability (UTC):", ", ".join(details["selected_times"]))
+        st.write("Selected start hours (UTC):", ", ".join(availability_label(slot) for slot in details["selected_times"]))
         st.write("Expanded availability (UTC):", ", ".join(details["available_slots_utc"]))
         resources = details["resources"]
         st.write("Speedups (days):", resources["speedups_days"])
@@ -159,14 +164,14 @@ for day, (date, minister) in DAYS.items():
     if not want[day]:
         continue
     st.subheader(f"{date} | {minister}")
-    st.caption("Select all available UTC times. Every :15 selection also includes :45 of that hour. The two 23:45 slots are only 15 minutes each.")
+    st.caption("Select the UTC hours when an appointment can start. Each hour includes starts at :15 and :45, even if the appointment continues into the next hour. The two 23:45 boundary slots are 15 minutes each.")
     sources = [earlier for earlier in DAYS if earlier != day and list(DAYS).index(earlier) < list(DAYS).index(day) and want[earlier]]
     if sources:
         source = st.selectbox("Copy availability from", sources, format_func=str.title, key=f"copy_{day}")
         if st.button("Copy availability", key=f"apply_copy_{day}"):
             for index, slot in enumerate(TIMES):
                 st.session_state[f"time_{day}_{index}"] = slot in requests[source]["selected"]
-    st.caption("Available start times (UTC) *")
+    st.caption("Available appointment start hours (UTC) *")
     selected = []
     for row in range(0, len(TIMES), 2):
         columns = st.columns(2, wrap=False)
@@ -174,7 +179,7 @@ for day, (date, minister) in DAYS.items():
             index = row + offset
             if index < len(TIMES):
                 slot = TIMES[index]
-                if column.checkbox(slot, key=f"time_{day}_{index}"):
+                if column.checkbox(availability_label(slot), key=f"time_{day}_{index}"):
                     selected.append(slot)
     resources = {}
     if day == "monday":
