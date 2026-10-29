@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 st.set_page_config(page_title="K398 prep appointments", page_icon="👑", layout="centered")
 
 DAYS = {
-    "monday": ("Monday, November 2", "Chief Minister — construction"),
-    "thursday": ("Thursday, November 5", "Noble Advisor — troop training"),
-    "friday": ("Friday, November 6", "Chief Minister — research"),
+    "monday": ("Monday, November 2", "Chief Minister | construction"),
+    "thursday": ("Thursday, November 5", "Noble Advisor | troop training"),
+    "friday": ("Friday, November 6", "Chief Minister | research"),
 }
 # Distinguish the day-before slot from the final slot for reliable storage.
 FIRST_SLOT = "23:45 (previous day; first 15-min slot)"
@@ -70,9 +70,26 @@ def save_submission(payload: dict) -> str:
     return submission_id
 
 
-st.title("👑 K398 prep appointments — November")
+st.title("👑 K398 prep appointments | November")
 st.caption("November 2, 5 and 6, 2026 · All times UTC")
 st.write("Request your minister appointments below. Select only times when you can actually be online. Requests are **not confirmed appointments**.")
+
+with st.expander("ℹ️ How are appointments assigned?", expanded=True):
+    st.markdown("""
+    Appointments are assigned based on your availability and your
+    expected contribution to prep points.
+
+    - Select **all** time slots when you're available (UTC).
+    - Each selected **:15** slot also includes the corresponding **:45** slot.
+    - Estimated resources and speedups help prioritize appointments
+      that contribute the most prep points. 
+    - We'll try to accommodate as many players as possible while
+      maximizing our kingdom's prep score.
+    - Submitting this form does not guarantee an appointment.
+      The final schedule will be shared later.
+
+    **Please only select times when you can actually be online!**
+    """)
 
 if st.session_state.get("submitted"):
     st.success("Your request was saved! 👑")
@@ -90,7 +107,7 @@ if st.session_state.get("review_payload"):
     if payload["in_game_id"]:
         st.write("In-game ID:", payload["in_game_id"])
     for day, details in payload["days"].items():
-        st.subheader(f"{details['date']} ? {details['minister']}")
+        st.subheader(f"{details['date']} | {details['minister']}")
         st.write("Selected availability (UTC):", ", ".join(details["selected_times"]))
         st.write("Expanded availability (UTC):", ", ".join(details["available_slots_utc"]))
         resources = details["resources"]
@@ -130,7 +147,7 @@ if st.session_state.get("review_payload"):
 
 username = st.text_input("What's your username? *", max_chars=150, key="username")
 alliance = st.text_input("What's your alliance? *", max_chars=150, key="alliance")
-player_id = st.text_input("What's your in-game ID? (optional)", max_chars=80, key="player_id")
+player_id = st.text_input("What's your in-game ID? * (up to 15 digits)", max_chars=15, key="player_id")
 st.divider()
 
 want = {}
@@ -141,7 +158,7 @@ requests = {}
 for day, (date, minister) in DAYS.items():
     if not want[day]:
         continue
-    st.subheader(f"{date} — {minister}")
+    st.subheader(f"{date} | {minister}")
     st.caption("Select all available UTC times. Every :15 selection also includes :45 of that hour. The two 23:45 slots are only 15 minutes each.")
     sources = [earlier for earlier in DAYS if earlier != day and list(DAYS).index(earlier) < list(DAYS).index(day) and want[earlier]]
     if sources:
@@ -152,7 +169,7 @@ for day, (date, minister) in DAYS.items():
     st.caption("Available start times (UTC) *")
     selected = []
     for row in range(0, len(TIMES), 2):
-        columns = st.columns(2)
+        columns = st.columns(2, wrap=False)
         for offset, column in enumerate(columns):
             index = row + offset
             if index < len(TIMES):
@@ -163,7 +180,7 @@ for day, (date, minister) in DAYS.items():
     if day == "monday":
         resources["tg"] = st.number_input("How much TG will you use? (approximately)", min_value=0, step=1, key="tg")
         resources["ttg"] = st.number_input("How much TTG will you use? (approximately)", min_value=0, step=1, key="ttg")
-    resources["speedups_days"] = st.number_input("How many days of speedups will you use? (approximately)", min_value=0.0, step=0.5, key=f"speedups_{day}")
+    resources["speedups_days"] = st.number_input("How many days of speedups will you use? (approximately)", min_value=0, step=1, key=f"speedups_{day}")
     if day == "friday":
         resources["dust"] = st.number_input("How much dust will you spend? (approximately)", min_value=0, step=1, key="dust")
     requests[day] = {"copy_from": None, "selected": selected, "resources": resources}
@@ -176,6 +193,8 @@ if st.button("Review request", type="primary"):
         errors.append("Please enter your username.")
     if not alliance.strip():
         errors.append("Please enter your alliance.")
+    if not player_id or not player_id.isascii() or not player_id.isdigit() or len(player_id) > 15:
+        errors.append("Please enter your in-game ID as a number of up to 15 digits.")
     if not requests:
         errors.append("Please request at least one appointment.")
     resolved = {}

@@ -1,4 +1,4 @@
-# ks-ministers — MVP
+# ks-ministers | MVP
 
 **Scope:** A public Streamlit signup form matching the K398 November prep Google Form, with conditional day selection, availability reuse, input validation, and persistent Neon PostgreSQL submissions. **No admin/dashboard/scheduler.**
 
