@@ -1,0 +1,7 @@
+.streamlit/secrets.toml
+.env
+.idea/
+.venv/
+__pycache__/
+*.pyc
+output/
