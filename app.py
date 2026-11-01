@@ -50,6 +50,8 @@ def get_engine(url: str):
 
 
 def save_submission(payload: dict) -> str:
+    if "monday" in payload["days"]:
+        raise ValueError("Monday registration is closed.")
     url = st.secrets["DATABASE_URL"]
     engine = get_engine(url)
     submission_id = str(uuid.uuid4())
@@ -104,6 +106,9 @@ if st.session_state.get("submitted"):
 
 if st.session_state.get("review_payload"):
     payload = st.session_state["review_payload"]
+    monday_closed = "monday" in payload["days"]
+    if monday_closed:
+        st.error("Monday registration is closed. Edit your request to continue with Thursday or Friday.")
     st.header("Review your request")
     st.caption("All times are UTC.")
     st.subheader("Player information")
@@ -130,7 +135,7 @@ if st.session_state.get("review_payload"):
             st.session_state[key] = value
         del st.session_state["review_payload"]
         st.rerun()
-    if st.button("Confirm & submit", type="primary", disabled=st.session_state.get("submitting", False)):
+    if st.button("Confirm & submit", type="primary", disabled=monday_closed or st.session_state.get("submitting", False)):
         st.session_state["submitting"] = True
         try:
             reference = save_submission(payload)
@@ -157,7 +162,11 @@ st.divider()
 
 want = {}
 for day, (date, minister) in DAYS.items():
-    want[day] = st.checkbox(f"{date}: {minister}", key=f"want_{day}")
+    closed = day == "monday"
+    if closed:
+        st.session_state[f"want_{day}"] = False
+    label = f"{date}: {minister}" + (" — Registration closed" if closed else "")
+    want[day] = st.checkbox(label, key=f"want_{day}", disabled=closed) and not closed
 
 requests = {}
 for day, (date, minister) in DAYS.items():
